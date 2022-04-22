@@ -1,0 +1,172 @@
+.program ADC_SCLK_gen
+
+
+
+.wrap_target
+    set x, 11
+    wait 1 gpio 1
+    wait 0 gpio 1 [6]
+    
+    clk_loop:
+        set pins 1 [2]
+        jmp x-- clk_loop side 0 [2]
+
+.wrap
+
+% c-sdk {
+
+// Helper function (for use in C program) to initialize this PIO program
+void ADC_SCLK_gen_init(PIO pio, uint sm, uint offset, uint pin, float div) {
+
+    // Sets up state machine and wrap target. This function is automatically
+    // generated in blink.pio.h.
+    pio_sm_config c = ADC_SCLK_gen_program_get_default_config(offset);
+
+    // Allow PIO to control GPIO pin (as output)
+    pio_gpio_init(pio, pin);
+
+    // Connect pin to SET pin (control with 'set' instruction)
+    sm_config_set_set_pins(&c, pin, 1);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_sideset(&c, 1, false, false);
+
+    // Set the pin direction to output (in PIO)
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+    
+    // Set the clock divider for the state machine
+    sm_config_set_clkdiv(&c, div);
+        
+    // Load configuration and jump to start of the program
+    pio_sm_init(pio, sm, offset, &c);
+}   
+
+%}
+
+
+.program ADC_get_sample
+
+.wrap_target
+
+    set x, 11
+    wait 1 gpio 1
+    wait 0 gpio 1 
+    wait 1 irq 7
+    irq clear 7
+    sample_loop:  
+        wait 1 gpio 2  
+        in pins, 1 
+        wait 0 gpio 2
+    jmp x-- sample_loop 
+    push
+
+.wrap
+
+% c-sdk {
+static inline void ADC_get_sample_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = ADC_get_sample_program_get_default_config(offset);
+
+    // Set the IN base pin to the provided `pin` parameter. This is the data
+    // pin, and the next-numbered GPIO is used as the clock pin.
+    sm_config_set_in_pins(&c, pin);
+    // Set the pin directions to input at the PIO
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 2, false);
+    // Connect these GPIOs to this PIO block
+    pio_gpio_init(pio, pin);
+
+    // Shifting to left matches the customary MSB-first ordering of SPI.
+    sm_config_set_in_shift(
+        &c,
+        false, // Shift-to-right = false (i.e. shift to left)
+        false,  // Autopush disabled
+        8      // Autopush threshold = 8
+    );
+
+    // We only receive, so disable the TX FIFO to make the RX FIFO deeper.
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+
+    // Set the clock divider for the state machine
+    sm_config_set_clkdiv(&c, 1);
+
+    // Load our configuration, and start the program from the beginning
+    pio_sm_init(pio, sm, offset, &c);
+    
+}
+%}
+
+
+.program ADC_gen_sample
+
+
+; Simulate ADC data
+.wrap_target
+    set x, 10
+    set pins 0
+    pull
+    irq set 7
+    wait 1 gpio 1
+    wait 0 gpio 1 
+
+    out pins 1
+    sample_gen_loop:
+        wait 1 gpio 2
+        out pins 1
+        wait 0 gpio 2
+    jmp x-- sample_gen_loop
+.wrap
+% c-sdk {
+static inline void ADC_gen_sample_init(PIO pio, uint sm, uint offset, uint pin, float div) {
+    
+    
+    pio_sm_config c = ADC_gen_sample_program_get_default_config(offset);
+
+    // Map the state machine's OUT pin group to one pin, namely the `pin`
+    // parameter to this function.
+    sm_config_set_out_pins(&c, pin, 1);
+    // Set this pin's GPIO function (connect PIO to the pad)
+    pio_gpio_init(pio, pin);
+    // Set the pin direction to output at the PIO
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    // Connect pin to SET pin (control with 'set' instruction)
+    sm_config_set_set_pins(&c, pin, 1);
+
+    // Set the pin direction to output (in PIO)
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    sm_config_set_out_shift(&c, false, false, 32);
+
+    // Load our configuration, and jump to the start of the program
+    pio_sm_init(pio, sm, offset, &c);
+
+    sm_config_set_clkdiv(&c, 1);
+    }
+%}
+
+.program hello
+
+; Repeatedly get one word of data from the TX FIFO, stalling when the FIFO is
+; empty. Write the least significant bit to the OUT pin group.
+
+loop:
+    pull
+    out pins, 1
+    jmp loop
+
+% c-sdk {
+static inline void hello_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = hello_program_get_default_config(offset);
+
+    // Map the state machine's OUT pin group to one pin, namely the `pin`
+    // parameter to this function.
+    sm_config_set_out_pins(&c, pin, 1);
+    // Set this pin's GPIO function (connect PIO to the pad)
+    pio_gpio_init(pio, pin);
+    // Set the pin direction to output at the PIO
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    // Load our configuration, and jump to the start of the program
+    pio_sm_init(pio, sm, offset, &c);
+    // Set the state machine running
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
