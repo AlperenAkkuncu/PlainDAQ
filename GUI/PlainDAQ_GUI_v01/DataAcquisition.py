@@ -15,5 +15,5 @@ class DataAcquirer:
     #Only for simulation
     def generate_fake_data(self,time_base, freq, amplitude, offset):
         return  offset \
-        + amplitude*np.sin(2*np.pi*freq*time_base+np.random.uniform(0,0.1,size=1)*np.pi)  \
-        + np.random.normal(0, amplitude/10, len(time_base))
+        + amplitude*np.sinc(2*np.pi*freq*time_base+np.random.uniform(0,0.03,size=1)*np.pi)  \
+        + np.random.normal(0, amplitude/120, len(time_base))

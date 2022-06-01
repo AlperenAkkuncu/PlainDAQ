@@ -17,9 +17,9 @@ class Controller:
         signal.signal(signal.SIGTERM, self.SIGTERM_handler)
 
         #Measurement data
-        self.num_sample = 3000
+        self.num_sample = 4000
         self.gui.plotter.set_num_sample(self.num_sample)
-        self.time_base = np.linspace(0, 1, self.num_sample)
+        self.time_base = np.linspace(-1, 1, self.num_sample)
 
         if simulate_data:
             self.gen_fake_data = threading.Timer(1, self.generate_fake_data)
@@ -29,7 +29,7 @@ class Controller:
         if self.SIGINT_event.is_set() or self.SIGTERM_event.is_set():
             pass
         else:
-            _y = self.model.generate_fake_data(self.time_base,1,2,5)   
+            _y = self.model.generate_fake_data(self.time_base,2,7,3.5)   
             self.gui.plotter.set_data(self.time_base, _y)
             self.gen_fake_data = threading.Timer(0.05, self.generate_fake_data)
             self.gen_fake_data.start()

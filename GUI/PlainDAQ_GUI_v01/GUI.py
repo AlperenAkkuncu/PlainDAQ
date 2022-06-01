@@ -17,6 +17,7 @@ class GUI:
         self.GUI_logger = logging.getLogger('example_logger')
         self.GUI_logger.warning('This is a warning')
         self.root = tk.Tk()
+        self.root.geometry('800x650')
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         #setting theme
@@ -50,7 +51,7 @@ class GUI:
 
     def start_plotter(self):
         self.root.wm_title("PlainDAQ GUI v0.1")
-        self.plotter.start_anim(1)
+        self.plotter.start_anim(1) 
 
     def start_bottom_frame(self):
         self.PlainDAQ_label = ttk.Label(self.bottom_frame, text = "bottom frame", justify = tk.CENTER)
@@ -62,7 +63,7 @@ class GUI:
     def start_left_frame(self):
 
         #Kuncu teknoloji logo
-        _image_label = Image.open("icons/kuncu_logo.png")
+        _image_label = Image.open("icons/kuncu_maker.png")
         _image_label = _image_label.resize((120,110),Image.ANTIALIAS)
         self.img_logo = ImageTk.PhotoImage(_image_label)    
         self.logo_label = tk.Label(self.left_frame,height = 150, image = self.img_logo)
@@ -139,7 +140,7 @@ class GUI:
         self.y_scale_notebook.add(self.y_scale_CH4_y_scale, text="CH4")
 
 
-        #Trigger Panel
+        #Trigger select label frame
         self.trigger_frame_text = ttk.Label(self.left_frame, text="Trigger", font=self.font_header)
         self.trigger_frame_label = ttk.LabelFrame(self.left_frame, labelwidget=self.trigger_frame_text ,
         width = 150, height = 50, padding = 10)
@@ -149,19 +150,52 @@ class GUI:
         self.CH2_trig_var = tk.IntVar()
         self.CH3_trig_var = tk.IntVar()
         self.CH4_trig_var = tk.IntVar()
+        _pady = 0
         self.CH1_trig = ttk.Checkbutton(self.trigger_frame_label ,text = "CH1",
         width = 4, variable=self.CH1_trig_var, onvalue = 1, offvalue = 0)
-        self.CH1_trig.grid(column=0, row=0, padx=0,ipadx = 0)
+        self.CH1_trig.grid(column=0, row=0, pady=_pady)
         self.CH2_trig = ttk.Checkbutton(self.trigger_frame_label ,text = "CH2",
         width = 4, variable=self.CH2_trig_var, onvalue = 1, offvalue = 0)
-        self.CH2_trig.grid(column=0, row=1, padx=0)
+        self.CH2_trig.grid(column=0, row=1, pady=_pady)
         self.CH3_trig = ttk.Checkbutton(self.trigger_frame_label ,text = "CH3",
         width = 4, variable=self.CH3_trig_var, onvalue = 1, offvalue = 0)
-        self.CH3_trig.grid(column=0, row=2, padx=0)
+        self.CH3_trig.grid(column=0, row=2, pady=_pady)
         self.CH4_trig = ttk.Checkbutton(self.trigger_frame_label ,text = "CH4",
         width = 4, variable=self.CH4_trig_var, onvalue = 1, offvalue = 0)
-        self.CH4_trig.grid(column=0, row=3, padx=0)
+        self.CH4_trig.grid(column=0, row=3, pady=_pady)
+
+        #Trigger type Label Frame
+        self.trigger_type_frame_text = ttk.Label(self.left_frame, text="Trig. Type", font=self.font_header)
+        self.trigger_type_frame_label = ttk.LabelFrame(self.left_frame, labelwidget=self.trigger_type_frame_text ,
+        width = 150, height = 50, padding = 10)
+
+        #Trigger type buttons
+        _rising_edge_trig_pic = Image.open("icons/Rising_edge_trigger.png")
+        _rising_edge_trig_pic = _rising_edge_trig_pic.resize((40,40),Image.ANTIALIAS)
+        self.rising_edge_trig_pic = ImageTk.PhotoImage(_rising_edge_trig_pic) 
+        self.rising_edge_trig_but = ttk.Button( self.trigger_type_frame_label, image=self.rising_edge_trig_pic)
+        self.rising_edge_trig_but.grid(column=0, row=0, padx=6)
+
+        _falling_edge_trig_pic = Image.open("icons/Falling_edge_trigger.png")
+        _falling_edge_trig_pic = _falling_edge_trig_pic.resize((40,40),Image.ANTIALIAS)
+        self.falling_edge_trig_pic = ImageTk.PhotoImage(_falling_edge_trig_pic) 
+        self.falling_edge_trig_but = ttk.Button( self.trigger_type_frame_label, image=self.falling_edge_trig_pic, width=10)
+        self.falling_edge_trig_but.grid(column=0, row=1, padx=6)
         
+
+        #Cursor Label Frame
+        self.cursor_frame_label = ttk.Label(self.left_frame, text="Cursors", font=self.font_header)
+        self.cursor_frame_label = ttk.LabelFrame(self.left_frame, labelwidget=self.cursor_frame_label,
+        width = 150, height = 50, padding = 10)
+
+        #Cursor button
+        _cursor_vertical_pic = Image.open("icons/vert_cursors.png")
+        _cursor_vertical_pic = _cursor_vertical_pic.resize((25,25),Image.ANTIALIAS)
+        self.cursor_vertical_pic = ImageTk.PhotoImage(_cursor_vertical_pic) 
+        self.cursor_vertical_but = ttk.Button( self.cursor_frame_label, image=self.cursor_vertical_pic)
+        self.cursor_vertical_but.bind("<Button-1>",self.on_cursor_vertical_but)
+        #self.cursor_vertical_but.state(['!pressed'])
+        self.cursor_vertical_but.grid(column=0,row=0)
 
         self.left_frame_place_widgets()
         
@@ -174,8 +208,17 @@ class GUI:
         self.channel_ON_OFF_frame.place(x=112, y= 150)
         self.numsample_label_frame.place(x=12, y=310)
         self.trigger_frame_label.place(x=12, y=390)
+        self.trigger_type_frame_label.place(x=105, y=390)
+        self.cursor_frame_label.place(x=12, y=545)
         
         #self.y_scale_notebook.place(x=10, y=250)
+
+
+
+    def on_cursor_vertical_but(self, event):
+        print("pressed")
+        self.plotter.set_cursor_vis( not( self.plotter.get_cursor_vis() ) )
+        
 
     def on_closing(self):
         if __name__ != "__main__":

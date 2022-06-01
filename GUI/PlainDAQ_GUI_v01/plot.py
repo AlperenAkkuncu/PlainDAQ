@@ -35,18 +35,35 @@ class Plotter:
         self.waveform, = self.ax.plot([], [], 'k-', alpha = 0.9)
         self.waveform.set_color( '#4169E1' )
 
+        # Set up plot parameters
+        self.ax.set_xlim(-1, 1)
+        self.ax.set_ylim(0, 12)
+        self.ax.set_xticklabels(labels = "")
+        self.ax.set_yticklabels(labels = "")
+        self.ax.grid(True)
+
         # ********************
         # Vertical cursors
         # ********************
-        self._is_cursor_visible = False
-        self.cursor_0, = self.ax.plot([], [], 'k-')
+        self.cursor_0, = self.ax.plot([], [], 'k-', marker="d",
+                                    markersize=10, markerfacecolor='#4169E1',
+                                    picker=True, pickradius=5)
         self.cursor_0.set_color( '#041004' )
-        self.cursor_1, = self.ax.plot([], [], 'k-')
+
+        self.cursor_1, = self.ax.plot([], [], 'k-', marker="d",
+                                    markersize=10, markerfacecolor='#4169E1',
+                                    picker=True, pickradius=5)
         self.cursor_1.set_color( '#041004' )
         
-        self.cursor_ind_0 = 0   #cursor_0's index
-        self.cursor_ind_1 = 0   #cursor_1's index
 
+        #initialize cursor positions.
+        self.cursor_0.set_data( [ self.x[ int(len(self.x)*0.2) ], self.x[ int(len(self.x)*0.2) ] ],[ self.ax.get_ylim()[0],self.ax.get_ylim()[1] ] )
+        self.cursor_1.set_data( [ self.x[ int(len(self.x)*0.8) ], self.x[ int(len(self.x)*0.8)  ] ],[ self.ax.get_ylim()[0],self.ax.get_ylim()[1] ] )
+        
+        self.cursor_0.set(visible = False)
+        self.cursor_1.set(visible = False)
+        
+        #Filling between the cursors
         self.cursor_verts = [(0,0), # left, bottom
                             (0,0),  # left, top
                             (0,0),  # right, top
@@ -63,22 +80,16 @@ class Plotter:
         self.cursor_patch.set(visible = False)
         self.ax.add_patch(self.cursor_patch)
 
-
-        # Set up plot parameters
-        self.ax.set_xlim(0, 1)
-        self.ax.set_ylim(0, 10)
-        self.ax.grid(True)
-
         # ********************
         # Text for measurement
         # ********************
-        self.text_stats = self.ax.text(0.02,8.5,u"\u25B3t : \nrms: \np-to-p",bbox=dict(boxstyle="round",
+        self.text_stats = self.ax.text(-0.95, 11.3, u"\u25B3t : \nrms: \np-to-p",bbox=dict(boxstyle="round",
                    ec=(1., 0.5, 0.5),
                    fc=(1., 0.8, 0.8),
                    ))
         self.text_stats.set(visible = False)
 
-        self.text_fps = self.ax.text(0.8,9.4,"FPS: ",bbox=dict(boxstyle="round",
+        self.text_fps = self.ax.text(0.78,11.7,"FPS: ",bbox=dict(boxstyle="round",
                    ec=(1., 0.5, 0.5),
                    fc=(1., 0.8, 0.8),
                    ))
@@ -86,11 +97,12 @@ class Plotter:
         self.time_start = 0
 
 
-
+        #Plot Events
         self.button_press_ID = plt.connect('button_press_event', self.on_click)
         self.button_release_ID = plt.disconnect('button_release_event')
         self.motion_notify_ID = plt.disconnect('motion_notify_event')
-
+        self.motion_notify_ID = plt.connect('resize_event', self.on_resize)
+        self.pickevent_ID = plt.disconnect('pick_event')
     """
     Called by controller to update the measurement data
     """
@@ -112,17 +124,23 @@ class Plotter:
         self.timestep = 1/self.num_sample
 
     def update_vertical_cursors(self):
-        if self._is_cursor_visible:
-            delta_t = self.x[self.cursor_ind_1] - self.x[self.cursor_ind_0]
-            if self.cursor_ind_0 != self.cursor_ind_1:
-                if self.cursor_ind_0 > self.cursor_ind_1:
-                    rms = np.sqrt(np.mean(np.square(self.y[self.cursor_ind_1:self.cursor_ind_0]))) #RMS text
-                    p_to_p = np.ptp(self.y[self.cursor_ind_1:self.cursor_ind_0]) #peak to peak text
+        if self.cursor_0.get_visible():
+            _cursor_0_xdata = self.cursor_0.get_xdata()[0]
+            _cursor_0_ind  = np.abs(self.x - _cursor_0_xdata).argmin() #closest
+            
+            _cursor_1_xdata = self.cursor_1.get_xdata()[0]
+            _cursor_1_ind = np.abs(self.x - _cursor_1_xdata).argmin()
+            
+            delta_t = _cursor_0_xdata - _cursor_1_xdata
+            if delta_t != 0:
+                if _cursor_0_xdata > _cursor_1_xdata:
+                    rms = np.sqrt(np.mean(np.square(self.y[_cursor_1_ind:_cursor_0_ind]))) #RMS text
+                    p_to_p = np.ptp(self.y[_cursor_1_ind:_cursor_0_ind]) #peak to peak text
 
-                    self.cursor_verts = [   (self.x[self.cursor_ind_1],self.ax.get_ylim()[0]), # left, bottom
-                                            (self.x[self.cursor_ind_1],self.ax.get_ylim()[1]), # left, top
-                                            (self.x[self.cursor_ind_0],self.ax.get_ylim()[1]), # right, top  
-                                            (self.x[self.cursor_ind_0],self.ax.get_ylim()[0]), # right, bottom
+                    self.cursor_verts = [   (_cursor_1_xdata,self.ax.get_ylim()[0]), # left, bottom
+                                            (_cursor_1_xdata,self.ax.get_ylim()[1]), # left, top
+                                            (_cursor_0_xdata,self.ax.get_ylim()[1]), # right, top  
+                                            (_cursor_0_xdata,self.ax.get_ylim()[0]), # right, bottom
                                             (0,0), # ignored
                                             ]
                     self.cursor_path = Path(self.cursor_verts, self.cursor_codes)
@@ -130,22 +148,40 @@ class Plotter:
                     self.cursor_patch.set(visible = True)
 
                 else:
-                    rms = np.sqrt(np.mean(np.square(self.y[self.cursor_ind_0:self.cursor_ind_1]))) #RMS text
-                    p_to_p = np.ptp(self.y[self.cursor_ind_0:self.cursor_ind_1]) #peak to peak text
+                    rms = np.sqrt(np.mean(np.square(self.y[_cursor_0_ind:_cursor_1_ind]))) #RMS text
+                    p_to_p = np.ptp(self.y[_cursor_0_ind:_cursor_1_ind]) #peak to peak text
 
-                    self.cursor_verts = [   (self.x[self.cursor_ind_0],self.ax.get_ylim()[0]), # left, bottom
-                                            (self.x[self.cursor_ind_0],self.ax.get_ylim()[1]), # left, top
-                                            (self.x[self.cursor_ind_1],self.ax.get_ylim()[1]), # right, top  
-                                            (self.x[self.cursor_ind_1],self.ax.get_ylim()[0]), # right, bottom
+                    self.cursor_verts = [   (_cursor_0_xdata,self.ax.get_ylim()[0]), # left, bottom
+                                            (_cursor_0_xdata,self.ax.get_ylim()[1]), # left, top
+                                            (_cursor_1_xdata,self.ax.get_ylim()[1]), # right, top  
+                                            (_cursor_1_xdata,self.ax.get_ylim()[0]), # right, bottom
                                             (0,0), # ignored
                                             ]
                     self.cursor_path = Path(self.cursor_verts, self.cursor_codes)
                     self.cursor_patch.set_path(self.cursor_path)
                     self.cursor_patch.set(visible = True)
                 
+                #Set the position of edge arrows
+
+
                 self.text_stats.set_text( u"\u25B3t : %1.4f\nrms: %2.4f\np-to-p: %2.4f"%(delta_t,rms,p_to_p) )
                 self.text_stats.set(visible = True)
     
+    def get_cursor_vis(self):
+        return self.cursor_0.get_visible()
+    
+    def set_cursor_vis(self, val):
+        self.cursor_0.set(visible = val)
+        self.cursor_1.set(visible = val)
+        self.text_stats.set(visible = val)
+        self.cursor_patch.set(visible = val)
+        
+        if(val == True):
+            self.pickevent_ID = plt.connect('pick_event', self.on_pick)
+        else:
+            plt.disconnect(self.pickevent_ID)
+                                   
+
     def __call__(self,i):
 
         self.time_exec = time.perf_counter()- self.time_start
@@ -176,27 +212,10 @@ class Plotter:
     def on_click(self, event):
         if event.inaxes:
             if event.button == MouseButton.LEFT:
-                print("Left pressed!")
-                print("Deleting Cursors")
-                if len(self.cursor_0.get_data()[0]) != 0:
-                    self._is_cursor_visible = False
-                    self.cursor_0.set(visible = False)
-                    self.cursor_1.set(visible = False)
-                    self.text_stats.set(visible = False)
-                    self.cursor_patch.set(visible = False)
-                                   
+                pass
 
             elif event.button == MouseButton.MIDDLE:
-                print("Middle pressed!")
-                print("Filling!")
-                self._is_cursor_visible = True
-                self.cursor_0.set(visible = True)
-                self.cursor_1.set(visible = True)
-                self.cursor_0.set_data( [event.xdata,event.xdata],[ self.ax.get_ylim()[0],self.ax.get_ylim()[1] ] )
-                self.cursor_1.set_data( [event.xdata,event.xdata],[ self.ax.get_ylim()[0],self.ax.get_ylim()[1] ] )
-                self.cursor_ind_0 = int(event.xdata/self.timestep)
-                self.button_release_ID = plt.connect('button_release_event', self.on_release)
-                self.motion_notify_ID = plt.connect('motion_notify_event', self.on_motion)
+                pass
     
     def on_release(self, event):
         if event.inaxes:
@@ -204,12 +223,41 @@ class Plotter:
                 print("Middle released!")
                 plt.disconnect(self.motion_notify_ID)
                 plt.disconnect(self.button_release_ID)
-            
+
+    def on_resize(self, event):
+        pass
+        #print(self.fig.get_figheight())
+        #print(self.fig.get_figwidth())   
 
     def on_motion(self, event):
         if event.inaxes:
+            pass
+
+    def on_pick(self, event):
+        
+        if(event.artist == self.cursor_0):
+            self.motion_notify_ID = plt.connect('motion_notify_event', self.on_motion_cursor_0)
+            self.button_release_ID = plt.connect('button_release_event', self.on_release_cursor_0)
+
+        elif(event.artist == self.cursor_1):
+            self.motion_notify_ID = plt.connect('motion_notify_event', self.on_motion_cursor_1)
+            self.button_release_ID = plt.connect('button_release_event', self.on_release_cursor_1)
+
+    def on_motion_cursor_0(self, event):
+        if event.inaxes:
+            self.cursor_0.set_data( [event.xdata,event.xdata],[ self.ax.get_ylim()[0],self.ax.get_ylim()[1] ] )
+  
+    def on_release_cursor_0(self, event):   
+        plt.disconnect(self.button_release_ID)
+        plt.disconnect(self.motion_notify_ID)
+
+    def on_motion_cursor_1(self, event):
+        if event.inaxes:
             self.cursor_1.set_data( [event.xdata,event.xdata],[ self.ax.get_ylim()[0],self.ax.get_ylim()[1] ] )
-            self.cursor_ind_1 = int(event.xdata/self.timestep)
+
+    def on_release_cursor_1(self, event):    
+        plt.disconnect(self.button_release_ID)
+        plt.disconnect(self.motion_notify_ID)
 
     def start_anim(self, interval):
         self.anim = FuncAnimation(self.fig, self, frames = 100, interval = interval, blit=True)
