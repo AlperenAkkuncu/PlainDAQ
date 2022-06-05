@@ -9,7 +9,7 @@ class Controller:
     def __init__(self, simulate_data = False):
         self.gui = GUI()
         self.model = DataAcquirer(simulate_dat)
-        adsadasdsasadsad
+       
         #tThreads for shutting down the software gracefully
         self.SIGINT_event = threading.Event()
         self.SIGTERM_event = threading.Event()
