@@ -1,5 +1,5 @@
 
-import os
+import 
 import logging
 from plot import Plotter
 import tkinter as tk
