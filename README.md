@@ -1,7 +1,7 @@
 # PlainDAQ
-An Open Source DAQ module for Raspberry Pi Pico
+PlainDAQ is a module that turns your Raspberry Pi Pico into a simple, precision 4-channel oscilloscope and a single channel function generator. Optionally it can also include a Wi-Fi module to add wireless capability to Raspberry Pi Pico modules.
 
-PlainDAQ is a simple, yet useful DAQ module for your Raspberry Pi Pico. It's got 4 analog inputs, a single analog output channel. It can also output ±5V to power external curcuitry that needs symetrical power supply. It optionally includes a simple UART-to-BLE module for wireless connectivity.
+To put it other words, PlainDAQ is a simple, useful tool to add basic precision analog functionality to your Raspberry Pi Pico board. It has a precision, low-noise, low-drift 12-bit 500kSPS/s ADC, sampling 4-channels and supporting 3 ranges (±1V, ±2V, ±4V). It also has a 10-bit DAC which helps create analog outputs and waveforms and it has a single range of ±4V.
 
 Short List of features:
 
@@ -9,8 +9,7 @@ Analog Inputs:
 • 4 Channels (multiplexed)  
 • 12-bit resolution, 72dB SNR (11.6 ENOB,4000:1 dynamic range)  
 • 500 kS/s sampling rate. 
-• ±0.5V, ±1V, ±2V, ±4V bipolar ranges.  
-• Auto-off calibration. 
+• ±1V, ±2V, ±4V bipolar ranges.  
 
 Analog Output:  
 • 10-bit resolution.  
@@ -25,16 +24,24 @@ Bipolar Voltage Supply:
 • ±5V power output.   
 • ±100mA current rating.    
 
-BLE Module:   
-• RAYTAC MDBT42T-AT   
-• Bluetooth v5.1    
-• Simple UART interface to Raspberry Pico   
+ESP-WROOM-02D AT-Command Module:
+• Simple UART interface to Raspberry Pico
+• Wi-Fi connectivity    
+• Shipped with ESP AT firmware 
 
-Some preliminary pics of the 2D and 3D model of PlainDAQ:
-![image](https://user-images.githubusercontent.com/95479952/150742505-596f1a6b-7473-4fc2-9701-bc9f864f2c53.png)
-![image](https://user-images.githubusercontent.com/95479952/150743290-590c0edf-d1c8-4169-84f5-43aeb313c938.png)
 
-Here is a hand assembled PlainDAQ, doesn't it look pretty? 😀
-![PlainDAQ-angle-02](https://user-images.githubusercontent.com/95479952/150743679-856e5686-c5f7-48ab-8af0-7fbeebe9454c.jpg)
+# Here are some nice pictures of PlainDAQ
+![PlainDAQ_new_2](https://user-images.githubusercontent.com/95479952/184297031-ced6864b-512b-4424-949a-460321cd55f8.jpg)
+![PlainDAQ_new_4](https://user-images.githubusercontent.com/95479952/184297121-dce1050f-0a05-4651-a342-d3f4e03c7a57.jpg)
+
+### Filter! More on that later
+![Filters](https://user-images.githubusercontent.com/95479952/184297323-fc78def6-4f7d-4448-9687-f404280a94a9.jpg)
+
+## PlainDAQ Connections
+![plaindaq-board-layout-1](https://user-images.githubusercontent.com/95479952/184296437-d4080dc3-fe01-415f-93ca-d07e4d21fa70.png)
+
+## PlainDAQ Components
+![plaindaq-board-layout-2](https://user-images.githubusercontent.com/95479952/184296734-acf6f79c-d416-4709-8f75-3d16918f5c03.png)
+
 
 
